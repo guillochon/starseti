@@ -1,0 +1,28 @@
+# secrets
+.env
+
+# search products; not part of this snapshot
+data/
+
+# LaTeX build products
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
+*.toc
+paper/main.pdf
+
+# figure previews
+paper/figures/*.png
+
+# ADS comparison dump (not the bibliography)
+paper/ads_export_raw.bib
+
+# python
+__pycache__/
+*.pyc
+.venv/

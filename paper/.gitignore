@@ -1,0 +1,15 @@
+# LaTeX build products
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.toc
+main.pdf
+# figure previews (the PDFs are the deliverables; PNGs are for quick checks)
+figures/*.png
+# Raw ADS BibTeX from util/ads_validate.py. Not the bibliography.
+ads_export_raw.bib

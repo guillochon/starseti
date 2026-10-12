@@ -1,0 +1,139 @@
+[project]
+name = "cepheid-seti"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "astropy>=8.0.1",
+    "astroquery>=0.4.11",
+    "lightkurve>=2.6.0",
+    "matplotlib>=3.11.2",
+    "numba>=0.67.0",
+    "numpy>=2.5.3",
+    "pandas>=2.3.3",
+    # The ASAS-SN / ZTF raw-photometry cache is parquet. It arrived
+    # transitively long before lc_cache.py imported it; a module that reads a
+    # format names the library that reads it.
+    "pyarrow>=21.0",
+    "scipy>=1.18.1",
+    "skypatrol>=0.6.21",
+    "tqdm>=4.70.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pytest-xdist>=3.8.0",
+    "ruff>=0.14",
+]
+
+# ---------------------------------------------------------------------------
+# ruff: one tool for both the formatter and the linter. `python dev.py fmt`
+# writes, `python dev.py lint` only checks -- and CI runs the same script, so
+# what passes locally is what passes there.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+# Deliberately behind requires-python. At py314 the formatter applies PEP 758
+# and rewrites `except (TypeError, ValueError):` as `except TypeError, ValueError:`
+# -- valid on 3.14, but unfamiliar enough to cost more in readability than the
+# two characters it saves.
+target-version = "py313"
+# data/ is the whole output tree; nothing in it is source. paper/ holds the
+# manuscript and its figure scripts, which follow the paper's conventions.
+extend-exclude = [".venv", "data", "paper"]
+# Makes ruff treat src/ and tests/ as this project's own code when it sorts
+# imports, so a new module needs no entry in known-first-party below.
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "F",      # pyflakes: undefined names, unused imports
+    "E", "W", # pycodestyle
+    "I",      # import ordering
+    "UP",     # pyupgrade
+    "B",      # bugbear: mutable defaults, loop-variable capture, ...
+    "C4",     # comprehension rewrites
+    "RUF",    # ruff's own checks
+]
+ignore = [
+    # The statistics code reads better with the paper's own names (N, Q, P, K,
+    # A, F) than with descriptive ones.
+    "E741",
+    # `zip()` without strict= is fine where the lengths are constructed equal.
+    "B905",
+    # The en-dash in "O-C" and characters like chi-squared and sigma are the
+    # notation this field writes in; they are not typos to be normalised.
+    "RUF001", "RUF002", "RUF003",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests reach into private helpers on purpose: those are where the statistics
+# live, and they are exactly what needs pinning down.
+"tests/*" = ["E501"]
+
+[tool.ruff.lint.isort]
+# Matches format.skip-magic-trailing-comma below.
+split-on-trailing-comma = false
+known-first-party = [
+    "backfill_gaia_bp_rp",
+    "cli",
+    # conftest is the tests' own module: without this it is sorted as a
+    # third-party import and the formatter and the linter disagree forever.
+    "conftest",
+    "deploy",
+    "dev",
+    "inspect_star",
+    "layout",
+    "migrate_phase_fold",
+    "score",
+    "sequence",
+    "serve_candidates",
+    "stage0_build_targets",
+    "stage1_pulse",
+    "stage2_vet",
+    "store",
+    "synth_preview",
+]
+
+[tool.ruff.format]
+# The pipeline has a lot of short numeric literals in lists; leaving magic
+# trailing commas alone keeps those on one line.
+skip-magic-trailing-comma = true
+
+# ---------------------------------------------------------------------------
+# pytest / coverage
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# The modules under test are plain scripts in src/, not an installed package;
+# this is what lets a test say `import store` the same way stage1_pulse does.
+pythonpath = ["src"]
+addopts = "-q --strict-markers"
+markers = [
+    "slow: needs a numba compile or a few seconds of Monte Carlo",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::RuntimeWarning",
+]
+
+[tool.coverage.run]
+# The whole source tree, so a new module is measured the day it is added
+# rather than the day someone remembers to list it here.
+source = ["src"]
+branch = true
+
+[tool.coverage.report]
+# Kept in step with dev.COVERAGE_MIN, which is what CI passes on the command
+# line; this makes a bare `pytest --cov` enforce the same floor.
+fail_under = 85
+show_missing = true
+skip_covered = false
+exclude_also = [
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    # numba compiles these; coverage cannot see inside a compiled kernel.
+    "@njit",
+]
