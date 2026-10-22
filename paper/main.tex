@@ -1,10 +1,39 @@
-%% starseti paper draft -- AASTeX 7, two-column, no line numbers.
-%% Build:  latexmk -pdf main   (or pdflatex/bibtex/pdflatex/pdflatex)
-\documentclass[twocolumn]{aastex701}
+%% starseti paper -- Acta Astronautica (Elsevier elsarticle) format.
+%% One source, two typesettings, each built through a three-line wrapper that sets \papermode:
+%%   submit.tex   -> submit.pdf    single column, 12 pt: the format Acta Astronautica requires for submission
+%%   preprint.tex -> preprint.pdf  two columns (elsarticle 5p, Times): close to the published article
+%% Build both:  latexmk -pdf   (latexmkrc lists both; compiling main.tex directly gives the submission format)
+%% arXiv:       python arxiv_submit.py   (zips the preprint typesetting)
+\providecommand{\papermode}{submit}
+\newif\iftwocol
+\def\scpreprintmode{preprint}\edef\scgivenmode{\papermode}
+\ifx\scpreprintmode\scgivenmode \twocoltrue \fi
+\iftwocol
+  \documentclass[final,5p]{elsarticle}
+\else
+  \documentclass[preprint,12pt]{elsarticle}
+\fi
 
+\usepackage[T1]{fontenc}
 \usepackage{amsmath}
+\iftwocol
+  % 5p sets a 522 pt text width, leaving 37 pt side margins on A4; arXiv stamps its
+  % identifier down the left margin, so narrow the text to clear it.
+  \geometry{textwidth=486pt}
+  \usepackage{newtxtext,newtxmath}   % Times text and math; newtxmath supplies the amssymb symbols
+\else
+  \usepackage{lmodern}
+  \usepackage{amssymb}
+\fi
+\usepackage{microtype}
+\usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+
+% Numbered references in citation order; the keys inside one \citep stay chronological in the
+% source (sort_citations.py) and are printed sorted and compressed.
+\biboptions{sort&compress}
 
 %% Placeholder / provisional text is set in red so it cannot be mistaken for a result.
 \newcommand{\colr}[1]{\textcolor{red}{#1}}
@@ -18,39 +47,82 @@
 \newcommand{\bcep}{\ensuremath{\beta}~Cephei}
 \newcommand{\pbeam}{\ensuremath{P_{\rm beam}}}
 
+% Journal abbreviations used in the .bib files (the ADS/AASTeX macros, which elsarticle lacks).
+\newcommand{\aj}{AJ}
+\newcommand{\apj}{ApJ}
+\newcommand{\apjl}{ApJL}
+\newcommand{\apjs}{ApJS}
+\newcommand{\araa}{ARA\&A}
+\newcommand{\aap}{A\&A}
+\newcommand{\aaps}{A\&AS}
+\newcommand{\mnras}{MNRAS}
+\newcommand{\pasp}{PASP}
+\newcommand{\nat}{Nature}
+\newcommand{\prl}{Phys.\ Rev.\ Lett.}
+\newcommand{\prd}{Phys.\ Rev.\ D}
+
+% Tables keep their natural size when they fit and are scaled to the line width (the column in a
+% table, the page in a table*) when they do not.
+\newsavebox{\fitbox}
+\newcommand{\fittable}[1]{\sbox{\fitbox}{#1}\ifdim\wd\fitbox>\linewidth\resizebox{\linewidth}{!}{\usebox{\fitbox}}\else\usebox{\fitbox}\fi}
+
+% Figures 3 and 4 are nearly a page tall; let floats fill most of a page, or a page of their own,
+% so they stay near the text that cites them.
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\dbltopfraction}{0.9}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.7}
+\renewcommand{\dblfloatpagefraction}{0.7}
+\setcounter{topnumber}{3}
+\setcounter{dbltopnumber}{3}
+
+% Highlights are a submission item that the published article does not print: the preprint
+% typesets them into a box that is thrown away.
+\iftwocol
+  \AtBeginDocument{\renewenvironment{highlights}{\setbox0=\vbox\bgroup\begin{itemize}}{\end{itemize}\egroup}}
+\fi
+
 % Short inline math stays on one line. A long formula is grouped with a finite
-% \relpenalty so it may still break.
-\relpenalty=10000
-\binoppenalty=10000
+% \relpenalty so it may still break. The narrow columns of the preprint layout keep
+% TeX's default penalties so lines can still fill.
+\iftwocol
+  \emergencystretch=3em
+\else
+  \relpenalty=10000
+  \binoppenalty=10000
+  \emergencystretch=1em
+\fi
 
-% AASTeX's \tabular always does \hskip\movetableright before reading the
-% preamble. That enters horizontal mode, and end-of-line spaces in the
-% class's column counter are then set to the left of the grid, so a
-% centered tabular sits right of center. Skip only when the shift is real.
-\def\tabular{%
-  \catcode`\&=\active\relax
-  \catcode`\$=\active\relax
-  \ifdim\movetableright>0pt \hskip\movetableright\fi
-  \global\movetableright=0pt
-  \savetabular}
-
-\shorttitle{A survey-scale search for phase-coded pulsators}
-\shortauthors{Guillochon}
+\journal{Acta Astronautica}
 
 \begin{document}
 
+\begin{frontmatter}
+
 \title{Listening to the Standard Candles: A Survey-Scale Search for Phase-Coded Beacons in Cepheids, RR~Lyrae and \bcep{} Stars}
 
-\author[0000-0002-9809-8215]{James Guillochon}
+\author{James Guillochon}
+\ead{guillochon@gmail.com}
 \affiliation{Independent Researcher}
-\email{guillochon@gmail.com}
 
 % The abstract is primitive TeX on purpose: arXiv metadata does not expand commands.
 \begin{abstract}
 Learned et al. (2008) proposed that a civilization could use Cepheids and RR Lyrae stars, the most closely watched clocks in astronomy, as beacons, firing pulsations early with a particle beam to write a message into the timing residuals. The one search to date examined a single Kepler star. We describe Star SETI, an automated pipeline that selects Cepheids, RR Lyrae and $\beta$ Cephei stars from Gaia DR3, measures per-cycle (TESS, Kepler) or block-averaged (ASAS-SN, ZTF) observed-minus-computed timing residuals, tests them for non-white structure, decodes them as a bit stream under the cumulative (``staircase'') modulation of a one-sided trigger, and matches the words against catalogs of recognizable sequences. A resonant antineutrino beam grazing the base of the driving zone needs hundreds to tens of thousands of times less power than a central beam, and driving an RR Lyrae star takes most of its light. Injections into real light curves show that only RR Lyrae stars are audible near the amplitude Learned et al. envisaged, with half of the codes recovered at 0.2--0.4 per cent of a period per bit in TESS; the ground-based surveys hear only codes held for tens of cycles per bit and read none. We time 97,725 light curves of 77,596 stars and vet 38,230 timing anomalies; 6823 carry timing structure the vetting cannot attribute to a known cause, all but eight of them on block-averaged timing to which only part of the vetting applies. The highest-ranked are non-radial modes in first-overtone RR Lyrae stars, Blazhko modulation and mode beating in $\beta$ Cephei stars, and no decoded word survives a false-discovery correction. We find no beacon. That bounds only beacons: a perfectly compressed message is indistinguishable from noise, so a civilization communicating efficiently rather than advertising could leave residuals that pass every test we can apply, in stars we cannot single out.
 \end{abstract}
 
-\keywords{Search for extraterrestrial intelligence (2127) --- Technosignatures (2128) --- Cepheid variable stars (218) --- RR Lyrae variable stars (1410) --- Beta Cephei variable stars (155) --- Time series analysis (1916)}
+\begin{highlights}
+\item A one-sided trigger writes a beacon into a pulsator's O$-$C as a cumulative staircase.
+\item A resonant antineutrino beam grazing the driving zone cuts the power by $10^{2}$--$10^{4}$.
+\item Injections show only TESS RR Lyrae stars are audible at the amplitudes envisaged.
+\item 97,725 light curves of 77,596 Cepheids, RR Lyrae and $\beta$ Cephei stars are timed.
+\item No decoded word survives a false-discovery correction; we find no beacon.
+\end{highlights}
+
+\begin{keyword}
+SETI \sep technosignatures \sep Cepheids \sep RR Lyrae stars \sep $\beta$ Cephei stars \sep time series analysis
+\end{keyword}
+
+\end{frontmatter}
 
 %% =====================================================================
 \section{Introduction}
@@ -114,7 +186,7 @@ Write the trigger energy as
 \end{equation}
 where $L\,\delta t$ is the stellar energy the phase advance is worth, $G$ is the gain \citet{Learned2008} invoke when they call the star ``a huge signal amplifier'' and decline to quantify, $f_{\rm abs}$ is the fraction of the beam the star absorbs at all, and $f_{\rm zone}$ is the fraction of \emph{that} which lands where it can trigger anything. We take $G=1$ throughout as a reference value; every figure below scales as $1/G$. It is not a conservative choice. For an autonomous oscillator an impulsive energy injection $\Delta E$ at the sensitive phase shifts the phase by $\Delta\phi/2\pi\approx Z\,\Delta E/E_{\rm puls}$, with $E_{\rm puls}$ the energy in the pulsation and $Z$ a phase sensitivity of order unity at the best phase, so $G\approx Z\,LP/E_{\rm puls}$: the gain is the ratio of the energy the star radiates per cycle ($LP$, $10^{43}$~erg for the reference Cepheid and $10^{40}$~erg for the RRab) to the energy stored in its pulsation. In the limit cycle the driving zone's work per cycle balances the dissipation, $W=2\kappa E_{\rm puls}$ with $\kappa$ the growth rate per cycle, of order $10^{-2}$ for the radial modes of RR~Lyrae stars in hydrodynamic models \citep{Bono1997, Kollath2011}, and $W$ is a fraction $\epsilon$ of the energy the star radiates per cycle, a few per cent to a few tenths, so $G\approx2Z\kappa/\epsilon$, between 0.1 and 1 at $Z=1$. A second route agrees. The driving zone sits where the thermal time of the layers above it is of order the period (Section~\ref{sec:staircase}), so those layers hold a thermal energy of order $LP$; at the surface velocity amplitude of an RRab star, $\sim$40~km~s$^{-1}$, their kinetic energy is comparable to their thermal energy, so $E_{\rm puls}\gtrsim LP$ and $G\lesssim Z$ from this side too. Only the relaxation-oscillator picture, in which the zone fires when its heat content crosses a threshold so that $\Delta E=L\,\delta t$ advances it by $\delta t$, gives $G\approx1$ or a little more. Until the phase-response curve noted in Section~\ref{sec:onesided} has been computed, $G=1$ should be read as the upper end of a range that extends an order of magnitude below it.
 
-\begin{figure*}[t]
+\begin{figure*}[tp]
   \centering
   \includegraphics[width=\textwidth]{figures/geometry.pdf}
   \caption{Schematic of the transmitter geometry (not to scale). (a) The host pulsator with its He~II driving zone (red shell), at radius $r_{\rm zone}$ and of thickness $\sim H$, just below the photosphere; its depth is exaggerated, since $H/R$ of a few per cent would place it at the edge of the disk. A partial Dyson swarm of collectors (blue) intercepts a fraction $f_{\rm coll}$ of the star's sky at a stand-off of $\sim40\,R$, drawn much closer here. It collects the starlight $L$ and converts it to a beamed neutrino flux at efficiency $\eta$. One emitting tile (open circle) fires a hollow-cone neutrino beam whose edges graze the base of the driving zone at impact parameter $b=r_{\rm zone}$. Each ray samples only radii $\ge r_{\rm zone}$, so the beam crosses the zone and the tenuous layers above it, leaves on the far side, and never illuminates the core; the axis of the cone (dotted) is empty. Emitters distributed over $4\pi$ each illuminate their own limb, and the sum is a spherical shell. (b) Advantage of the geometry. A radial ray through the star crosses a shell of thickness $H$ twice, a path of $2H$. A ray grazing the shell at radius $r$ crosses it along the chord $2\sqrt{2rH}$, drawn in full, an enhancement of $\sqrt{2R/H}\approx7$ for a Cepheid, $\approx8$ for an RRab star and $\approx14$ for a \bcep{} star. That enhancement is what keeps the required beam power tolerable once the core is no longer the absorber. Produced by \texttt{figures/make\_geometry.py}.}
@@ -153,12 +225,12 @@ A collector intercepting a fraction $f_{\rm coll}$ of the star's sky and convert
 \end{equation}
 We let $\eta$ approach unity rather than fix it at a tenth, because the question the search asks is whether a transmitter powered by its own star could produce what the data can hear, and that question belongs at the physical limit. The sphere fractions at $\eta=1$ are those of Table~\ref{tab:physics}. The annular geometry is why the unquantified gain $G$ is load-bearing only for the central-beam picture. Equation~\ref{eq:ceiling} caps the code amplitude a self-powered transmitter can produce. We take the transmitter to have no energy store, so that it can put into one kick only what it collected during the preceding cycle, $\eta f_{\rm coll}LP$, and its advance per set bit obeys $\dtp\le\eta f_{\rm coll}\,Gf_{\rm abs}f_{\rm zone}$ whatever the duty cycle (the $d=1$ case of Equation~\ref{eq:ceiling}). With a complete sphere at unit efficiency that is $\dtp\le f_{\rm abs}$: $0.023$ for a Cepheid, $3\times10^{-3}$ for an RRab and $0.064$ for a \bcep{} star. We refer to that number below as the \emph{$G=1$ kick ceiling}; it is the largest code a storage-free transmitter at unit gain can send from the whole of its star's light, it moves as $G$ (Section~\ref{sec:cost}), and it is the scale against which the sensitivity of a search should be judged. A transmitter with a twentieth of the sky at ten per cent efficiency sits two hundred times below it.
 
-\begin{table*}[t]
+\begin{table*}[tp]
 \centering
 \caption{Reference stars and the cost of driving them at unit gain \label{tab:physics}}
 \scriptsize
 \setlength{\tabcolsep}{2.6pt}
-\begin{tabular}{lccccccccccc}
+\fittable{\begin{tabular}{lccccccccccc}
 \toprule
  & & \multicolumn{5}{c}{Base of the driving zone} & \multicolumn{2}{c}{Central beam} & \multicolumn{3}{c}{Resonant annulus} \\
 \cmidrule(lr){3-7} \cmidrule(lr){8-9} \cmidrule(lr){10-12}
@@ -168,7 +240,7 @@ Cepheid  & 1.74 & 58{,}000  & $6.5\times10^{3}$ & $1.0\times10^{-4}$ & 0.042 & $
 RRab     & 2.89 & 55{,}000  & $7.3\times10^{2}$ & $8\times10^{-7}$   & 0.030 & $1.2\times10^{4}$ & 70~TeV  & 1040 & $3.0\times10^{-3}$ & 0.16 & 16\% \\
 \bcep{}  & 3.75 & 220{,}000 & $9.3\times10^{3}$ & $1.4\times10^{-6}$ & 0.011 & $2.5\times10^{5}$ & 9~TeV   & 600  & 0.064 & $7.8\times10^{-3}$ & 0.8\% \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \begin{minipage}{\textwidth}
 \vspace{1pt}
 \small \textsc{Note}---The base of the driving zone is the layer whose overlying thermal time equals one period; $\Sigma_{\rm above}$ (g~cm$^{-2}$) is the column above it, $f_{\rm above}$ the mass fraction above it, and $\Sigma_{\rm graze}=\Sigma_{\rm disk}f_{\rm above}\sqrt{2R/H}/2$ the column along a chord grazing it. The RRab row is read off a MESA horizontal-branch model \citep{Zenodo15741530}; the other two come from a grey radiative envelope that reproduces that model to a factor of two. Beam powers are for $\dtp=10^{-3}$ per set bit at a duty cycle of $0.5$ and $G=1$, with $f_{\rm zone}=f_{\rm above}$ for the central beam at its $\tau=1$ energy (cross-section of \citealt{Gandhi1998}) and $f_{\rm zone}=1$ for the resonant annulus at the Glashow resonance, whose absorbed fraction is the optical depth of the grazing column at $\Lambda=4\times10^{6}$~g~cm$^{-2}$. The ceiling is the largest $\dtp$ a storage-free transmitter with a complete sphere at unit efficiency can send, $f_{\rm abs}$ (Section~\ref{sec:swarm}). The derivation and the model comparison are in the \texttt{research/} notes released with the code.
@@ -220,7 +292,7 @@ The pipeline, \starseti{}, runs in stages. Stage~0 builds the target list from G
 
 Targets are drawn from the Gaia~DR3 Specific Object Study tables of Cepheids \citep{Ripepi2023} and RR~Lyrae stars \citep{Clementini2023}, keeping the classical, Type~II and anomalous Cepheids and the RRab, RRc and RRd stars, and from the DR3 supervised classification \citep{Rimoldini2023} for \bcep{} candidates, for which no SOS table exists. Stars in the Magellanic Clouds, M31 and M33 are removed by position, and a magnitude cut of $G\le15.5$ is applied for TESS; ZTF and ASAS-SN use their own windows below. Each survey then receives the subset it can observe: the TESS Input Catalog \citep{Stassun2019} is cross-matched to obtain TIC identifiers; ASAS-SN Sky Patrol identifiers \citep{Kochanek2017, Hart2023} are found through the survey's own Gaia~DR2 cross-identifications and a $3''$ cone search, restricted to $10.5\le G\le15.5$ between saturation and the useful faint limit; and ZTF object identifiers \citep{Bellm2019, Masci2019} are found by a $1.5''$ cone match within the survey's own window, $13\le G\le18.5$, the bright end set by saturation (which is why only eight \bcep{} stars have ZTF rows), noting that a ZTF object is one field, quadrant and filter, so a star typically arrives as several identifiers. The Gaia period and peak-to-peak amplitude, where available, are carried on each target row. Table~\ref{tab:targets} gives the resulting counts.
 
-\begin{table}[t]
+\begin{table}[tp]
 \centering
 \caption{Target lists and processing status \label{tab:targets}}
 \begin{tabular}{lrrr}
@@ -340,10 +412,14 @@ The KIC~5520878 episode (Section~\ref{sec:hippke}) is the specific failure this 
 
 The test that matters is the star itself. KIC~5520878 is in the target lists of Section~\ref{sec:surveys} under its TESS, ASAS-SN and ZTF names, but TESS holds only two 30-minute full-frame sectors for it and the ground-based rows average tens of cycles per block, so none of them can resolve a beat that turns over every 2.6 cycles. The pipeline therefore accepts Kepler as a second dense survey for named targets, with the Kepler month, quarter and year in place of the TESS orbit and sector as sampling periods, and the 19 short-cadence months of KIC~5520878 (723{,}000 points, 395 per cycle, 1841 timed cycles over 856~d) were run through the same stage-1 and stage-2 cuts as every other star. Prewhitening removed one independent mode, at $P_1=0.17010$~d ($f_1/f_0=1.582$) and 2.4 per cent of the peak-to-peak amplitude, just above the floor. The \oc{} that remained is not white: the Ljung--Box test and the permutation entropy both flag it, and its strongest secondary period, 4.79 cycles, is the subharmonic of the aliased residual beat. The decode routes do not read it as a message: the two-level word is 24 bits long, its squareness against the best free sinusoid is $0.00$, it matches no catalog, and the sequence $p$-value is unity, so the star reaches triage as a multi-periodic pulsator, not as a code candidate. Stage-2 vetting of the same series classifies the star as ASTRO: the 4.79-cycle secondary period is, to within a per cent, the period of the free sinusoid that explains the decoded word's steps as well as two levels do (its frequency is $0.209$ per cycle), which is the hard veto of Section~\ref{sec:vetting} for a second mode sampled once per cycle. The star is displayed in the web interface (Section~\ref{sec:viewer}) alongside its TESS, ASAS-SN and ZTF rows, none of which reaches vetting as anything but a quiet or secular clock.
 
-\begin{deluxetable}{llr}
-\tablecaption{Vetting classes and their base scores \label{tab:classes}}
-\tablehead{\colhead{Class} & \colhead{Meaning} & \colhead{Base}}
-\startdata
+\begin{table}[tp]
+\centering
+\caption{Vetting classes and their base scores \label{tab:classes}}
+\small
+\fittable{\begin{tabular}{llr}
+\toprule
+Class & Meaning & Base \\
+\midrule
 SURVIVOR   & survived every stage-2 veto                  & 0.70 \\
 WEAK       & non-white \oc{}, not independently confirmed & 0.45 \\
 TRIAGE     & stage-1 flag, not yet vetted                 & 0.32 \\
@@ -354,8 +430,9 @@ SYSTEMATICS& survey orbit, sector or sampling period      & 0.07 \\
 SHAPE      & light-curve shape change, not timing         & 0.06 \\
 QUIET      & no stage-1 flag                              & 0.06 \\
 ARTIFACT   & pipeline artifact                            & 0.04 \\
-\enddata
-\end{deluxetable}
+\bottomrule
+\end{tabular}}
+\end{table}
 
 \subsection{Ranking}
 \label{sec:score}
@@ -365,7 +442,7 @@ Every star receives a score that the web interface sorts on. The stage-2 class s
 \subsection{Sensitivity by injection}
 \label{sec:injection}
 
-\begin{figure*}[t]
+\begin{figure*}[tp]
   \centering
   \includegraphics[width=\textwidth]{figures/completeness.pdf}
   \caption{Recovery of injected phase codes on real, uninjected-quiet hosts, cumulative (staircase) waveform, as a function of the advance per set bit. Top: TESS, one bit per cycle, per class. Solid lines: the star reaches the vetting gate (flagged). Dashed: at least 90 per cent of the injected bits are read back correctly. Blue: an 8-bit random word; red: the 28-bit primes word. Bottom: the flagged fraction on ASAS-SN and ZTF RR~Lyrae hosts, with the code held for one (dotted), eight (dashed) and 32 (solid) cycles per bit; no ground-based injection was decoded. Shaded bands are one-sigma Wilson intervals. Dotted vertical line: the $\dtp=10^{-3}$ scaling of \citet{Learned2008}; dash-dotted: the $G=1$ kick ceiling of a storage-free transmitter with a complete sphere at unit efficiency, per class (Section~\ref{sec:swarm}): $3\times10^{-3}$ for the RR~Lyrae stars and $0.023$ for the Cepheids, at the amplitude where the injection stops being a phase code; the \bcep{} ceiling, $0.064$, lies beyond the axis. In the RR~Lyrae panel the 8-bit word is decoded more often than it is flagged at $3.5\times10^{-3}$, because the decode routes promote on $p<10^{-3}$ with squareness rather than on bit recall. The RR~Lyrae arm is the only one that reaches half completeness below $\dtp=10^{-2}$. The fall of every curve at the largest amplitude marks where the injection starts to drag the template and period with it. Produced by \texttt{figures/make\_completeness.py} from the released injection database.}
@@ -392,10 +469,13 @@ The two-mode beat control of Section~\ref{sec:beating} was run on the same 40 qu
 \paragraph{The thermal tail.}
 With each set bit's advance accruing as $1-e^{-(n+1)/\tau}$ over the following cycles at $\tau=1$ (Section~\ref{sec:staircase}), the 8-bit word on 40 quiet TESS RR~Lyrae hosts is flagged half the time at $\dtp=1.1\times10^{-2}$ rather than $4.0\times10^{-3}$, decoded at $5.8\times10^{-3}$ rather than $4.2\times10^{-3}$, and promoted by the quantised-step route at $3.6\times10^{-2}$ rather than $2.6\times10^{-2}$ (Table~\ref{tab:sensitivity}). A one-cycle tail costs the flag gate a factor of 2.6 and the decode gate 1.4, a penalty of the same order as the staircase itself, so the two-level discriminant survives the physics. Six of that run's 80 uninjected controls reached the flag gate, against none in the earlier runs; its hosts were drawn as quiet from the store after the re-timing of Section~\ref{sec:template}, and a quiet verdict is reproducible only under the pipeline that gave it.
 
-\begin{deluxetable}{lllcc}
-\tablecaption{Amplitude for 50 per cent recovery, staircase waveform \label{tab:sensitivity}}
-\tablehead{\colhead{Survey, class} & \colhead{Word} & \colhead{$k$} & \colhead{Flagged (\dtp)} & \colhead{Decoded (\dtp)}}
-\startdata
+\begin{table*}[tp]
+\centering
+\caption{Amplitude for 50 per cent recovery, staircase waveform \label{tab:sensitivity}}
+\fittable{\begin{tabular}{lllcc}
+\toprule
+Survey, class & Word & $k$ & Flagged (\dtp) & Decoded (\dtp) \\
+\midrule
 TESS RR Lyrae    & 8-bit random  & 1  & $4.0\times10^{-3}$ & $4.2\times10^{-3}$ \\
 TESS RR Lyrae    & 28-bit primes & 1  & $2.4\times10^{-3}$ & $\ge0.05$ \\
 TESS RR Lyrae, one-cycle tail & 8-bit random & 1 & $1.1\times10^{-2}$ & $5.8\times10^{-3}$ \\
@@ -415,13 +495,18 @@ ZTF RR Lyrae     & 8-bit random  & 8  & $5.7\times10^{-3}$ & $\ge0.05$ \\
 ZTF RR Lyrae     & 28-bit primes & 8  & $2.4\times10^{-3}$ & $\ge0.05$ \\
 ZTF RR Lyrae     & 8-bit random  & 32 & $1.5\times10^{-3}$ & $\ge0.05$ \\
 ZTF RR Lyrae     & 28-bit primes & 32 & $6.0\times10^{-4}$ & $\ge0.05$ \\
-\enddata
-\tablecomments{$k$ is the number of pulsation cycles per bit. 40 hosts per row; 130--360 injections per TESS row, 160--320 per ground-based row. A ``$\ge$'' entry means the target rate was not reached below the amplitude at which the injection stops being a phase code (0.05), or, for the one entry at $6\times10^{-3}$, below the largest amplitude the scan placed short of it. The decoded gate for the primes word requires 28 consecutive correctly read bits and is therefore harsher than the flagged gate, which the fold integrates over repeats. TESS rows measured 2026 September 17 with the fold decoder and the one-cycle-tail row (Section~\ref{sec:staircase}) on 2026 September 25; ASAS-SN rows 2026 September 24 with the kick and epoch-fold routes; ZTF rows re-measured on 2026 September 25 with the quadratic drift removed before the jitter regression (Section~\ref{sec:sparse}) and stage~2 run on every flagged injection, which moved no ZTF crossing by more than 10 per cent. The ground-based entries are the raw 50 per cent crossings between adjacent amplitudes, because a logistic fit that includes the ceiling amplitude, at which the template follows the code and the flag rate collapses, is bent by it. The two-mode beat control of Section~\ref{sec:beating} is described in the text.}
-\end{deluxetable}
+\bottomrule
+\end{tabular}}
+
+\begin{minipage}{\textwidth}
+\vspace{1pt}
+\small \textsc{Note}---$k$ is the number of pulsation cycles per bit. 40 hosts per row; 130--360 injections per TESS row, 160--320 per ground-based row. A ``$\ge$'' entry means the target rate was not reached below the amplitude at which the injection stops being a phase code (0.05), or, for the one entry at $6\times10^{-3}$, below the largest amplitude the scan placed short of it. The decoded gate for the primes word requires 28 consecutive correctly read bits and is therefore harsher than the flagged gate, which the fold integrates over repeats. TESS rows measured 2026 September 17 with the fold decoder and the one-cycle-tail row (Section~\ref{sec:staircase}) on 2026 September 25; ASAS-SN rows 2026 September 24 with the kick and epoch-fold routes; ZTF rows re-measured on 2026 September 25 with the quadratic drift removed before the jitter regression (Section~\ref{sec:sparse}) and stage~2 run on every flagged injection, which moved no ZTF crossing by more than 10 per cent. The ground-based entries are the raw 50 per cent crossings between adjacent amplitudes, because a logistic fit that includes the ceiling amplitude, at which the template follows the code and the flag rate collapses, is bent by it. The two-mode beat control of Section~\ref{sec:beating} is described in the text.
+\end{minipage}
+\end{table*}
 
 Figure~\ref{fig:synthetic} shows what a detection would look like. The three built-in synthetic controls of the pipeline (a Cepheid, an RRab and a two-mode \bcep{} star at TESS two-minute cadence with sector gaps) each carry a different recognizable word at $\dtp=10^{-3}$: the primes, the counting numbers and the Fibonacci numbers. Timed by the production code, their \oc{} series show the cumulative staircase of Equation~\ref{eq:staircase} with its ramp absorbed into the period, their steps fall into two levels, and the decoder names all three words.
 
-\begin{figure*}[t]
+\begin{figure*}[tp]
   \centering
   \includegraphics[width=\textwidth]{figures/synthetic_examples.pdf}
   \caption{The three synthetic controls timed by the production stage-1 code. Rows: a classical Cepheid carrying the primes 2--19 in binary, an RRab star carrying the counting numbers 1--8, and a two-mode \bcep{} star carrying the Fibonacci numbers 1--21, each at $\dtp=10^{-3}$ per set bit, one bit per cycle, TESS two-minute sampling with sector gaps. Left: three cycles of the light curve. Middle: the per-cycle \oc{} from the template time-shift fit with the injected staircase drawn through it; both are detrended, since the period search absorbs the mean advance. Right: the first difference of the \oc{}, the series the decoder reads, colored by the injected bit; a clear bit reads as $+d\,\delta t$ and a set bit as $-(1-d)\,\delta t$ once the ramp is removed. Where the timer's cycle windows do not coincide with the transmitter's, a window straddling two bits reads an intermediate step (visible in the Cepheid row); the fold-first decoder recovers the word regardless. Produced by \texttt{figures/make\_synthetic.py}.}
@@ -446,41 +531,58 @@ Of the 38{,}230 flagged light curves, stage~2 classes 17{,}313 as ARTIFACT, 5525
 
 Table~\ref{tab:subtype} splits the RR~Lyrae rows by Gaia subtype, which is the cheapest test of what the sparse survivors are. The flag rate is nearly the same for RRab and RRc stars in every survey, so what stage~1 flags is not, at that stage, the Blazhko effect. The survivor rate is five to nine times higher for RRab stars than for RRc stars, in step with the Blazhko incidence of 40--50 per cent among RRab stars \citep{Prudil2017, Kovacs2020, Skarka2020} against a few per cent among RRc stars \citep{Netzel2018}, and with the lower limit of 11 per cent that a strict visual selection finds in ZTF field stars \citep{Donev2025}; the RRc stars instead go to ASTRO two to three times more often, through the additional-mode periods the astrophysics vetoes catch. What survives the sparse vetting is Blazhko-shaped even though what is flagged is not. We inspected the top of the list by hand in two orderings: by the score of Section~\ref{sec:score}, and by the significance of a named word.
 
-\begin{deluxetable}{llrrrr}
-\tablecaption{RR~Lyrae rows by Gaia subtype \label{tab:subtype}}
-\tablehead{\colhead{Survey} & \colhead{Type} & \colhead{Timed} & \colhead{Flagged} & \colhead{SURVIVOR} & \colhead{ASTRO}}
-\startdata
+\begin{table}[tp]
+\centering
+\caption{RR~Lyrae rows by Gaia subtype \label{tab:subtype}}
+\small
+\fittable{\begin{tabular}{llrrrr}
+\toprule
+Survey & Type & Timed & Flagged & SURVIVOR & ASTRO \\
+\midrule
 TESS    & RRab & 8807  & 22\% & 2.1\% & 2.5\% \\
 TESS    & RRc  & 4007  & 18\% & 0.3\% & 4.9\% \\
 ASAS-SN & RRab & 10036 & 50\% & 6.3\% & 3.9\% \\
 ASAS-SN & RRc  & 4970  & 40\% & 0.7\% & 11.9\% \\
 ZTF     & RRab & 42192 & 45\% & 12.8\% & 3.7\% \\
 ZTF     & RRc  & 18702 & 40\% & 2.3\% & 10.9\% \\
-\enddata
-\tablecomments{Percentages are of the timed rows. The 720 RRd rows are omitted.}
-\end{deluxetable}
+\bottomrule
+\end{tabular}}
+
+\begin{minipage}{\columnwidth}
+\vspace{1pt}
+\small \textsc{Note}---Percentages are of the timed rows. The 720 RRd rows are omitted.
+\end{minipage}
+\end{table}
 
 \subsection{The highest-scoring survivors}
 \label{sec:topscore}
 
-\begin{deluxetable*}{llrrrccl}
-\tabletypesize{\footnotesize}
-\tablecaption{The ten highest-scoring stars \label{tab:topscore}}
-\tablehead{\colhead{Star} & \colhead{Type} & \colhead{$P$ (d)} & \colhead{$N_{\rm cyc}$} & \colhead{$\sigma_{\rm O-C}$ (s)} & \colhead{$\nu_{\rm O-C}$} & \colhead{$\nu_{\rm amp}$} & \colhead{Explanation}}
-\startdata
+\begin{table*}[tp]
+\centering
+\caption{The ten highest-scoring stars \label{tab:topscore}}
+\footnotesize
+\fittable{\begin{tabular}{llrrrccl}
+\toprule
+Star & Type & $P$ (d) & $N_{\rm cyc}$ & $\sigma_{\rm O-C}$ (s) & $\nu_{\rm O-C}$ & $\nu_{\rm amp}$ & Explanation \\
+\midrule
 \textbf{TIC 152825245} & RRc & 0.3131 & 130 & 83 & 0.185 & 0.189 & 0.61 alias subharmonic \\
 TIC 240268877 (BD+46 3337) & BCEP? & 0.3563 & 293 & 2586 & 0.162 & 0.008 & comparable modes \\
 TIC 10931356 & RRab & 0.5481 & 84 & 135 & 0.311 & 0.008 & unexplained \\
 TIC 467480241 & BCEP & 0.1421 & 852 & 212 & secular & 0.042 & beat, 3.4~d \\
 TIC 114228663 & BCEP & 0.1581 & 247 & 665 & 0.193 & 0.101 & beat, 3.2~d \\
 TIC 142240683 & RRc & 0.3113 & 135 & 21 & 0.379 & 0.002 & alias of the prewhitened 0.61 mode \\
-ASASSN 360777681701 & RRc & 0.3373 & 68 & 4336 & \nodata & \nodata & sparse jitter, 4100~s \\
-ASASSN 360777954158 & RRc & 0.3451 & 60 & 1605 & \nodata & \nodata & sparse jitter, 2400~s \\
-ASASSN 412317075339 & RRc & 0.3417 & 59 & 2061 & \nodata & \nodata & sparse jitter, 2300~s \\
-ASASSN 618475347825 & RRc & 0.3564 & 121 & 1057 & \nodata & \nodata & sparse jitter, 1050~s \\
-\enddata
-\tablecomments{Classed SURVIVOR, in ranked order: the six highest-scoring of the eight TESS stars with per-cycle timing, then the first four sparse survivors, since a sparse survivor cannot outrank a dense one. Type is the Gaia~DR3 class; the query mark on BD+46~3337 is Gaia's, and the text argues the star is SPB-like. $N_{\rm cyc}$ is the number of timed cycles, or of timed blocks of 40--80 cycles for the ASAS-SN rows, and $\sigma_{\rm O-C}$ the \oc{} scatter. $\nu_{\rm O-C}$ and $\nu_{\rm amp}$ are the strongest non-secular peaks, in cycles$^{-1}$, of the Lomb--Scargle periodograms of the per-cycle \oc{} and of the per-cycle amplitude; for TIC~467480241 the strongest \oc{} peak is a secular term, and the sparse rows have no per-cycle amplitude. None of the ten decodes to a named word ($p=1$), and none has a decoded word with squareness above 0.08. The star in bold is shown in Figure~\ref{fig:candidates}.}
-\end{deluxetable*}
+ASASSN 360777681701 & RRc & 0.3373 & 68 & 4336 & \ldots & \ldots & sparse jitter, 4100~s \\
+ASASSN 360777954158 & RRc & 0.3451 & 60 & 1605 & \ldots & \ldots & sparse jitter, 2400~s \\
+ASASSN 412317075339 & RRc & 0.3417 & 59 & 2061 & \ldots & \ldots & sparse jitter, 2300~s \\
+ASASSN 618475347825 & RRc & 0.3564 & 121 & 1057 & \ldots & \ldots & sparse jitter, 1050~s \\
+\bottomrule
+\end{tabular}}
+
+\begin{minipage}{\textwidth}
+\vspace{1pt}
+\small \textsc{Note}---Classed SURVIVOR, in ranked order: the six highest-scoring of the eight TESS stars with per-cycle timing, then the first four sparse survivors, since a sparse survivor cannot outrank a dense one. Type is the Gaia~DR3 class; the query mark on BD+46~3337 is Gaia's, and the text argues the star is SPB-like. $N_{\rm cyc}$ is the number of timed cycles, or of timed blocks of 40--80 cycles for the ASAS-SN rows, and $\sigma_{\rm O-C}$ the \oc{} scatter. $\nu_{\rm O-C}$ and $\nu_{\rm amp}$ are the strongest non-secular peaks, in cycles$^{-1}$, of the Lomb--Scargle periodograms of the per-cycle \oc{} and of the per-cycle amplitude; for TIC~467480241 the strongest \oc{} peak is a secular term, and the sparse rows have no per-cycle amplitude. None of the ten decodes to a named word ($p=1$), and none has a decoded word with squareness above 0.08. The star in bold is shown in Figure~\ref{fig:candidates}.
+\end{minipage}
+\end{table*}
 
 Table~\ref{tab:topscore} lists the ten stars at the top of the ranking: six TESS stars with per-cycle timing and, since a sparse survivor cannot outrank a dense one, the first four sparse ones. All share the same minimum $p$-value, the $1/(N+1)$ floor of the 2000-draw permutation null, so their order among themselves is mostly set by tie-breaking terms. None carries a named word, and none of the designed-signal discriminants of Section~\ref{sec:decode} fires. Squareness is at most 0.08 against a gate of 0.25, and no decoded word is reproduced when the two halves of the baseline are decoded separately.
 
@@ -495,10 +597,13 @@ The shape test of Section~\ref{sec:vetting} is a zero-lag rank correlation betwe
 \subsection{The most significant named words}
 \label{sec:topseq}
 
-\begin{deluxetable*}{lllclccl}
-\tablecaption{The ten real stars with the most significant named words \label{tab:topseq}}
-\tablehead{\colhead{Star} & \colhead{Type} & \colhead{Named window} & \colhead{Encoding} & \colhead{$N_{\rm bit}$} & \colhead{$m$} & \colhead{$p$} & \colhead{Stage 2}}
-\startdata
+\begin{table*}[tp]
+\centering
+\caption{The ten real stars with the most significant named words \label{tab:topseq}}
+\fittable{\begin{tabular}{lllclccl}
+\toprule
+Star & Type & Named window & Encoding & $N_{\rm bit}$ & $m$ & $p$ & Stage 2 \\
+\midrule
 TIC 151932981 (SX Pup) & RRab & counting 73--76, inverted  & 8-bit   & 38 & 1 & $6.0\times10^{-5}$ & ARTIFACT \\
 TIC 327061092         & RRc  & counting 72--75            & 8-bit   & 33 & 3 & $2.1\times10^{-4}$ & QUIET \\
 ZTF 685111300023197   & RRab & triangular 561, 595, inverted & minimal & 29 & 2 & $4.9\times10^{-4}$ & ASTRO \\
@@ -509,20 +614,25 @@ ZTF 333102100073787   & RRc  & $e$, inverted              & stream  & 21 & 1 & $
 TIC 141590160         & RRc  & counting 72--75, inverted  & 8-bit   & 37 & 2 & $1.99\times10^{-3}$ & ASTRO \\
 TIC 204639317         & BCEP & counting 50--51            & 8-bit   & 27 & 2 & $2.05\times10^{-3}$ & ARTIFACT \\
 ZTF 865113100007054   & RRc  & squares 49, 64, inverted   & 8-bit   & 28 & 1 & $7.0\times10^{-3}$ & WEAK \\
-\enddata
-\tablecomments{$N_{\rm bit}$ is the word length in bits, $m$ the number of bits in which the fold's own word disagrees with the catalog window, and $p$ the larger of the amplitude and coincidence $p$-values of Section~\ref{sec:decode}, corrected for the search within one star but not across stars. ``Inverted'' means the window matched with the opposite polarity. QUIET rows were not promoted by stage~1, because their windows did not beat a free sinusoid on the steps. The synthetic primes control, at $p=2.01\times10^{-3}$, would rank ninth, between TIC~141590160 and TIC~204639317. The star in bold, the first TESS star outside the counting windows, is shown in Figure~\ref{fig:candidates}.}
-\end{deluxetable*}
+\bottomrule
+\end{tabular}}
+
+\begin{minipage}{\textwidth}
+\vspace{1pt}
+\small \textsc{Note}---$N_{\rm bit}$ is the word length in bits, $m$ the number of bits in which the fold's own word disagrees with the catalog window, and $p$ the larger of the amplitude and coincidence $p$-values of Section~\ref{sec:decode}, corrected for the search within one star but not across stars. ``Inverted'' means the window matched with the opposite polarity. QUIET rows were not promoted by stage~1, because their windows did not beat a free sinusoid on the steps. The synthetic primes control, at $p=2.01\times10^{-3}$, would rank ninth, between TIC~141590160 and TIC~204639317. The star in bold, the first TESS star outside the counting windows, is shown in Figure~\ref{fig:candidates}.
+\end{minipage}
+\end{table*}
 
 Table~\ref{tab:topseq} lists the ten real stars whose decoded words are named at the lowest $p$. None survives the across-star correction of Section~\ref{sec:decode}. Six of the ten are vetoed by stage~2, two are WEAK, and two were never promoted. Every word with a measured squareness has a value between 0.00 and 0.15, where the synthetic primes control has 0.87. A second look shows the named words to be one astrophysical signal meeting one corner of the catalog.
 
-Six of the ten are ``counting'' windows, and four of those are overlapping windows of the integers 72--76 in 8-bit fixed width, \texttt{01001000\,01001001\,01001010\,\ldots}. That stretch of the catalog is almost periodic with period three (\texttt{010\,010\,01\ldots}), and the decoded words are period-three repetitions such as \texttt{110110110101101}. In the test pass the three RRc stars carrying that window had \oc{} periodograms peaking at 0.36--0.38 cycles$^{-1}$, a period of 2.7 cycles, the per-cycle alias of the 0.61 mode; once those modes are prewhitened, the star that headed the list, TIC~76305643, folds into a 41-bit word that matches no catalog. The same window is still named in 91 light curves of unrelated stars across all three surveys (8 per cent of the 1129 named words), 59 of them RRc stars; a counting window starting at 40--44 is named in 95. A beacon would not send the same five integers from 91 stars; a bias in the matcher would. The coincidence $p$-value (Equation~\ref{eq:pbits}) conditions on the number of set bits but treats every arrangement of them as equally likely. The aliased sinusoid of a second mode produces near-periodic arrangements far more often than that null allows, and a few catalog windows are rich in exactly those arrangements. So $p_{\rm bits}$ is too small for the most common natural signal in the sample. A null drawn from sinusoidal words at the observed alias frequency would remove this family.
+Six of the ten are ``counting'' windows, and four of those are overlapping windows of the integers 72--76 in 8-bit fixed width, \texttt{01001000}\,\allowbreak\texttt{01001001}\,\allowbreak\texttt{01001010}\,\allowbreak\ldots. That stretch of the catalog is almost periodic with period three (\texttt{010\,010\,01\ldots}), and the decoded words are period-three repetitions such as \texttt{110110110101101}. In the test pass the three RRc stars carrying that window had \oc{} periodograms peaking at 0.36--0.38 cycles$^{-1}$, a period of 2.7 cycles, the per-cycle alias of the 0.61 mode; once those modes are prewhitened, the star that headed the list, TIC~76305643, folds into a 41-bit word that matches no catalog. The same window is still named in 91 light curves of unrelated stars across all three surveys (8 per cent of the 1129 named words), 59 of them RRc stars; a counting window starting at 40--44 is named in 95. A beacon would not send the same five integers from 91 stars; a bias in the matcher would. The coincidence $p$-value (Equation~\ref{eq:pbits}) conditions on the number of set bits but treats every arrangement of them as equally likely. The aliased sinusoid of a second mode produces near-periodic arrangements far more often than that null allows, and a few catalog windows are rich in exactly those arrangements. So $p_{\rm bits}$ is too small for the most common natural signal in the sample. A null drawn from sinusoidal words at the observed alias frequency would remove this family.
 
 A catalog-level control points the same way. In the test pass we re-ran the matcher with every catalog bit-flipped, and again with every catalog reversed, over the 12{,}054 stars with score $\ge0.5$ and a decodable series. The real catalog named 98 of them, the flipped catalog 91 and the reversed catalog 99. Sequences no transmitter would choose are named as often as the ones a transmitter would, which is the behavior of a matcher finding chance resemblances, not messages.
 
 \subsection{Two stars in detail}
 \label{sec:twostars}
 
-\begin{figure*}[t]
+\begin{figure*}[tp]
   \centering
   \includegraphics[width=\textwidth]{figures/candidates.pdf}
   \caption{One star from each ordering, shown in bold in its table. Left: TIC~152825245, first by score (Table~\ref{tab:topscore}), with no named word. Right: TIC~147576267, first among the TESS stars of Table~\ref{tab:topseq} once the counting windows are set aside, named as the triangular numbers 561 and 595 in minimal binary. (a) Phase-folded TESS light curve and template. (b) Per-cycle \oc{} from the template fit (filled) and, where stage~2 ran, from the independent steepest-branch crossing time (open); TIC~147576267 was never promoted to stage~2. (c) Lomb--Scargle periodograms of the per-cycle \oc{} (black) and amplitude (red), each normalized; the dotted line marks half the per-cycle alias of the prewhitened 0.61 mode. (d) \oc{} steps averaged per residue of the word length $N_{\rm bit}$, with the decoder's two-level word (blue), the best free sinusoid folded the same way (orange) and, on the right, the named window at its best alignment (grey dashed; shaded bits disagree with the decoded word). $R^2$ is the count-weighted variance of the folded means each model explains. Produced by \texttt{figures/make\_candidates.py}.}
@@ -581,19 +691,22 @@ The inspection of the candidates also shows how to make the next pass sharper. T
 
 We did not find a beacon, but we now know what one would have to be. \citet{Learned2008} proposed a signal; the physics of Section~\ref{sec:physics} makes it a one-sided staircase in the \oc{}, written by a resonant beam grazing the base of the driving zone, cheapest on the RR~Lyrae stars, and loud enough at the kick ceiling of a self-powered transmitter to fall within a factor of two of what TESS can hear. The RR~Lyrae stars TESS has timed are therefore the right place to have listened first, and none shows a beacon at the largest scale its own light could pay for. That silence was worth measuring: it turns an open proposal into a bounded one, and it tells the next pass how much quieter the signal it looks for must be.
 
-\begin{acknowledgments}
+\section*{Acknowledgements}
 The manuscript source, the bibliography, and the equilibrium-solver and figure scripts are available online.\footnote{\url{https://github.com/guillochon/starseti}} The author takes full responsibility for the contents of this paper. Large language models (Claude Fable 5.1, Grok 4.6, and GPT5.6 Sol) were used, under author supervision, to draft and edit the text, to derive and check analytic results, to write and refine the analysis and figure-generation scripts released with this paper, and to refine the presentation of the figures. The figures themselves are produced by those scripts from the solver outputs; no generative model created or altered the plotted data. Every displayed equation has been re-derived independently, every entry in the bibliography was validated against the NASA Astrophysics Data System, and all references and AI edits were hand-checked by the author. We aimed to be compliant with the AAS guidelines on generative AI in manuscript preparation.\footnote{\url{https://journals.aas.org/author-llm-guidelines}} Those guidelines do not treat such tools as authors; responsibility for accuracy remains with the listed author. We thank J. Xavier Prochaska for providing access to AI models that were used to conduct independent AI reviews.
 
 This paper includes data collected by the TESS mission, which are publicly available from the Mikulski Archive for Space Telescopes (MAST). Funding for the TESS mission is provided by the NASA Explorer Program. This work has made use of data from the European Space Agency (ESA) mission Gaia, processed by the Gaia Data Processing and Analysis Consortium (DPAC), of the ASAS-SN Sky Patrol, and of the Zwicky Transient Facility light-curve service at IRSA. ZTF is supported by the National Science Foundation and a collaboration of partner institutions.
-\end{acknowledgments}
 
-\facilities{TESS, Gaia, ASAS-SN, PO:1.2m (ZTF), MAST, IRSA}
+\emph{Facilities:} TESS, Gaia, ASAS-SN, PO:1.2m (ZTF), MAST, IRSA.
 
-\software{\texttt{astropy} \citep{Astropy2022}, \texttt{lightkurve} \citep{Lightkurve2018}, \texttt{numpy} \citep{Harris2020}, \texttt{scipy} \citep{Virtanen2020}, \texttt{numba} \citep{Lam2015numba}, \texttt{matplotlib} \citep{Hunter2007}}
+\emph{Software:} \texttt{astropy} \citep{Astropy2022}, \texttt{lightkurve} \citep{Lightkurve2018}, \texttt{numpy} \citep{Harris2020}, \texttt{scipy} \citep{Virtanen2020}, \texttt{numba} \citep{Lam2015numba}, \texttt{matplotlib} \citep{Hunter2007}.
 
+\section*{Declaration of competing interest}
+The author declares no competing financial interests or personal relationships that could have appeared to influence the work reported in this paper.
+
+\section*{CRediT authorship contribution statement}
+\textbf{James Guillochon:} Conceptualization, Methodology, Software, Formal analysis, Investigation, Data curation, Visualization, Writing -- original draft, Writing -- review \& editing.
+
+\bibliographystyle{elsarticle-num-names}
 \bibliography{references,references-seti}
-%% Local copy of aasjournalv7.bst with one change: no stray space before a
-%% collaboration author in citation labels (see README.md).
-\bibliographystyle{aasjournalv7collab}
 
 \end{document}

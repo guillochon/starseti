@@ -7,12 +7,14 @@ phase-coded beacons in Cepheids, RR Lyrae, and beta Cephei stars.
 
 ```bash
 cd paper
-latexmk -pdf main
+latexmk -pdf
 ```
 
-`aastex701` comes with TeX Live and MiKTeX. This repository includes
-`paper/aasjournalv7collab.bst`, the local style that drops the stray space
-before a collaboration author. See `paper/README.md`.
+builds both typesettings of `paper/main.tex` in the Acta Astronautica
+(`elsarticle`) format: `submit.pdf`, single column for journal submission, and
+`preprint.pdf`, two columns. `elsarticle` and `newtx` come with TeX Live and
+MiKTeX. `python paper/arxiv_submit.py` zips the two-column version for arXiv.
+See `paper/README.md`.
 
 ## Figures
 

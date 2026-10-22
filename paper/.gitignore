@@ -13,3 +13,7 @@ main.pdf
 figures/*.png
 # Raw ADS BibTeX from util/ads_validate.py. Not the bibliography.
 ads_export_raw.bib
+submit.pdf
+preprint.pdf
+*.spl
+build.out

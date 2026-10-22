@@ -1,23 +1,48 @@
 # Paper draft
 
-AASTeX 7 (`aastex701`, two-column, no line numbers). Placeholder or provisional
-text is set in red with `\colr{...}`.
+Acta Astronautica format (Elsevier `elsarticle`, numbered references with
+`elsarticle-num-names`). Placeholder or provisional text is set in red with
+`\colr{...}`.
+
+One source, `main.tex`, typeset two ways by three-line wrappers that set
+`\papermode` before `\input{main}`:
+
+| Wrapper | Output | Layout |
+|---|---|---|
+| `submit.tex` | `submit.pdf` | single column, 12 pt: the format Acta Astronautica requires for submission |
+| `preprint.tex` | `preprint.pdf` | two columns (`5p`, Times): close to the published article; this is what goes to arXiv |
+
+Compiling `main.tex` directly gives the submission layout. The highlights are
+printed only in the submission layout.
 
 ## Build
 
 ```bash
 cd paper
-pdflatex main && bibtex main && pdflatex main && pdflatex main
+latexmk -pdf
 ```
 
-or `latexmk -pdf main`. MiKTeX and TeX Live both ship `aastex701.cls` and
-`aasjournalv7.bst`.
+`latexmkrc` lists both wrappers, so a bare `latexmk -pdf` builds both PDFs.
+MiKTeX and TeX Live both ship `elsarticle.cls`, `elsarticle-num-names.bst` and
+`newtx`. The `.bib` files use the ADS journal macros (`\apj`, `\mnras`, ...),
+which `main.tex` defines because `elsarticle` does not.
 
-`aasjournalv7.bst` puts a stray space in front of collaboration author names
-in the citation labels ("( Gaia Collaboration et al. 2023)") because it always
-appends a blank after the (empty) forename. `aasjournalv7collab.bst` is a local
-copy with that blank made conditional; `main.tex` uses it. Diff against the
-MiKTeX/TeX Live copy to see the two changed lines.
+## arXiv
+
+```bash
+python paper/arxiv_submit.py
+```
+
+rebuilds `preprint.pdf` and writes `starseti-arxiv.zip` in the repository root,
+ready to upload: `main.tex` with `\def\papermode{preprint}` prepended, the
+`.bbl` from that build as `main.bbl`, and the four figure PDFs. `--dry-run`
+lists the files, `--no-build` reuses an up-to-date `preprint.bbl`, `--out`
+picks another path.
+
+`aasjournalv7collab.bst` is left over from the AASTeX 7 version of the draft
+(see git history): a copy of `aasjournalv7.bst` without the stray space before
+collaboration authors in citation labels. `elsarticle-num-names` does not have
+that problem and the current source does not use the file.
 
 References live in two files: `references.bib` (the idea, physics, surveys,
 statistics, software) and `references-seti.bib` (the broader technosignature

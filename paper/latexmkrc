@@ -1,0 +1,4 @@
+# Build both typesettings with a bare `latexmk -pdf` in this directory:
+#   submit.pdf   (single column, the Acta Astronautica submission format)
+#   preprint.pdf (two columns, close to the published article)
+@default_files = ('submit.tex', 'preprint.tex');

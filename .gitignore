@@ -14,7 +14,13 @@ data/
 *.out
 *.synctex.gz
 *.toc
+*.spl
 paper/main.pdf
+paper/submit.pdf
+paper/preprint.pdf
+
+# arXiv upload written by paper/arxiv_submit.py
+starseti-arxiv.zip
 
 # figure previews
 paper/figures/*.png
